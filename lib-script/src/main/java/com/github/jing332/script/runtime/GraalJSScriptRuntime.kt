@@ -10,8 +10,18 @@ open class GraalJSScriptRuntime(
     var console: Console = Console(),
 ) {
     companion object {
-        val sharedContext: Context by lazy {
-            Context.newBuilder("js")
+        init {
+            // Android 兼容性：禁用 GraalVM 的模块系统相关功能
+            System.setProperty("polyglot.engine.WarnInterpreterOnly", "false")
+            System.setProperty("polyglot", "true")
+        }
+
+        // 禁用 sharedContext，因为 GraalVM 23.1.2 在 Android 上有兼容性问题
+        // 需要时直接创建新的 Context
+        @JvmStatic
+        @Suppress("UNUSED")
+        fun createSharedContext(): Context {
+            return Context.newBuilder("js")
                 .allowAllAccess(false)
                 .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup { className ->
@@ -47,7 +57,8 @@ open class GraalJSScriptRuntime(
     }
 
     fun init() {
-        val bindings = context?.getBindings("js") ?: sharedContext.getBindings("js")
+        val ctx = context ?: createContext()
+        val bindings = ctx.getBindings("js")
 
         // Put environment
         bindings.putMember("environment", environment)
@@ -88,7 +99,7 @@ open class GraalJSScriptRuntime(
         bindings.putMember("Buffer", GraalJSBuffer)
 
         // Initialize WebSocket constructor
-        val ctx = context ?: sharedContext
+        val ctx = context ?: createContext()
         bindings.putMember("WebSocket", ctx.asValue { args: Array<Value> ->
             val url = if (args.isNotEmpty()) args[0].asString() else ""
             val headers = if (args.size > 1 && args[1].hasMembers()) {
@@ -105,5 +116,5 @@ open class GraalJSScriptRuntime(
         })
     }
 
-    protected fun getBindings() = context?.getBindings("js") ?: sharedContext.getBindings("js")
+    protected fun getBindings() = (context ?: createContext()).getBindings("js")
 }

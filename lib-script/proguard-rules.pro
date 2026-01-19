@@ -62,6 +62,11 @@
 -dontwarn jdk.vm.ci.**
 -dontwarn com.oracle.truffle.api.**
 -dontwarn com.oracle.truffle.runtime.**
+-dontwarn jdk.internal.misc.**
+
+# Android-specific: Suppress warnings for Java 9+ module system
+-dontwarn java.lang.module.**
+-dontwarn java.lang.Class
 
 # Keep all GraalVM JS engine classes
 -keep class org.graalvm.js.** { *; }

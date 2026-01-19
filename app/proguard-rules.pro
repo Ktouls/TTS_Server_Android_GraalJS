@@ -21,6 +21,13 @@
 -dontwarn com.oracle.**
 -dontwarn org.graalvm.**
 -dontwarn com.ibm.icu.**
+-dontwarn java.lang.module.**
+-dontwarn jdk.internal.misc.**
+
+# Android-specific: don't optimize Java 9+ module system calls that GraalVM tries to use
+-keepclassmembers class java.lang.Class {
+    public java.lang.Module getModule();
+}
 
 # Keep all GraalVM Polyglot classes
 -keep class org.graalvm.polyglot.** { *; }
