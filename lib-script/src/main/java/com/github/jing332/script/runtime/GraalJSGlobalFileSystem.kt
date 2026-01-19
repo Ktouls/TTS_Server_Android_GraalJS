@@ -65,7 +65,7 @@ class GraalJSGlobalFileSystem {
         fun copy(path: String, newPath: String, overwrite: Boolean = false, environment: Environment): Boolean {
             val f = file(path, environment)
             return if (f.exists())
-                f.copyTo(file(newPath, environment), overwrite)
+                f.copyTo(file(newPath, environment), overwrite) == file(newPath, environment)
             else false
         }
 

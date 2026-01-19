@@ -6,10 +6,8 @@ data class Environment(val cacheDir: String, val id: String) {
     companion object {
         fun Value.environment(): Environment {
             val envValue = getMember("environment")
-            return if (envValue.hasHostObject()) {
+            return if (envValue.isHostObject) {
                 envValue.asHostObject<Environment>()
-            } else if (envValue.isHostObject) {
-                envValue.asHostObject()
             } else {
                 throw IllegalStateException("Environment not found")
             }

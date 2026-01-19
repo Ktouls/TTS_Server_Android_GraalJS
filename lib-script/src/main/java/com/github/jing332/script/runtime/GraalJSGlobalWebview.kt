@@ -16,10 +16,11 @@ class GraalJSGlobalWebview {
                 js = js,
             )
             val ret = runBlocking { webview.getHtmlResponse() }
-            return ret.onSuccess { it }.onFailure {
+            ret.onSuccess { return it }.onFailure {
                 if (it is BackstageWebView.Error.E)
                     throw RuntimeException(it.description)
-            }.getOrNull()
+            }
+            return null
         }
 
         fun loadHtml(html: String, headers: Map<CharSequence, CharSequence>? = null, script: String? = null): String? {
@@ -31,10 +32,11 @@ class GraalJSGlobalWebview {
                 js = js
             )
             val ret = runBlocking { webview.getHtmlResponse() }
-            return ret.onSuccess { it }.onFailure {
+            ret.onSuccess { return it }.onFailure {
                 if (it is BackstageWebView.Error.E)
                     throw RuntimeException(it.description)
-            }.getOrNull()
+            }
+            return null
         }
     }
 }

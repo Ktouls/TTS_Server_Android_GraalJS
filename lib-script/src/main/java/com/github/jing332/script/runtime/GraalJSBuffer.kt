@@ -52,11 +52,15 @@ class GraalJSBuffer private constructor(private val data: ByteArray) {
         data[index] = value.toByte()
     }
 
-    override fun toString(encoding: String? = null): String {
+    override fun toString(): String {
+        return data.toString(StandardCharsets.UTF_8)
+    }
+
+    fun toString(encoding: String?): String {
         val enc = encoding?.lowercase(Locale.getDefault()) ?: "utf-8"
         return when (enc) {
             "base64" -> Base64.getEncoder().encodeToString(data)
-            "hex" -> data.toHexString()
+            "hex" -> data.joinToString("") { "%02x".format(it) }
             "utf8", "utf-8" -> data.toString(StandardCharsets.UTF_8)
             "ascii" -> data.toString(StandardCharsets.US_ASCII)
             else -> {

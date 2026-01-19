@@ -1,16 +1,16 @@
 package com.github.jing332.script
 
-import android.content.Context
+import android.content.Context as AndroidContext
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
 import java.io.InputStreamReader
 
-class JsBeautify(context: Context) {
+class JsBeautify(context: AndroidContext) {
     private val graalContext: Context
     private var formatJsFunc: Value
 
     init {
-        graalContext = Context.newBuilder("js")
+        graalContext = org.graalvm.polyglot.Context.newBuilder("js")
             .allowAllAccess(false)
             .allowHostAccess(org.graalvm.polyglot.HostAccess.ALL)
             .build()

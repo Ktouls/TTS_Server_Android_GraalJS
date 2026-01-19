@@ -105,7 +105,6 @@ class GraalJSWebSocket(
                     }
                     else -> {
                         val bytes = when {
-                            arg0.hasBuffer() -> arg0.asBuffer()
                             arg0.hasArrayElements() -> ByteArray(arg0.arraySize.toInt()) { i ->
                                 arg0.getArrayElement(i.toLong()).asByte()
                             }

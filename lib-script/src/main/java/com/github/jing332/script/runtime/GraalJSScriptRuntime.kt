@@ -87,18 +87,19 @@ open class GraalJSScriptRuntime(
         bindings.putMember("Buffer", GraalJSBuffer)
 
         // Initialize WebSocket constructor
-        bindings.putMember("WebSocket", context.asValue { args: Array<Value> ->
+        val ctx = context ?: sharedContext
+        bindings.putMember("WebSocket", ctx.asValue { args: Array<Value> ->
             val url = if (args.isNotEmpty()) args[0].asString() else ""
-            val headers = if (args.size > 1 && args[1].hasMembers()) {
+            val headers = if (args.size > 1) {
                 val headersMap = mutableMapOf<CharSequence, CharSequence>()
-                for (key in args[1].memberKeys) {
+                args[1].memberKeys.forEach { key ->
                     headersMap[key] = args[1].getMember(key).asString()
                 }
                 headersMap
             } else {
                 emptyMap()
             }
-            GraalJSWebSocket(context, url, headers)
+            GraalJSWebSocket(ctx, url, headers)
         })
     }
 

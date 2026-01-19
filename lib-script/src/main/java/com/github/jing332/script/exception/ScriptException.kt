@@ -20,16 +20,24 @@ open class ScriptException(
 ) : RuntimeException() {
     companion object {
         fun from(throwable: Throwable): ScriptException {
-            val (sourceName, lineNumber, columnNumber, errorMsg) = when (throwable) {
+            val sourceName: String
+            val lineNumber: Int
+            val columnNumber: Int
+            val errorMsg: String
+
+            when (throwable) {
                 is PolyglotException -> {
                     val sourceLocation = throwable.sourceLocation
-                    val line = sourceLocation?.startLine ?: -1
-                    val column = sourceLocation?.startColumn ?: -1
-                    val source = sourceLocation?.source?.name ?: ""
-                    Triple(source, line, column) to throwable.message ?: throwable.toString()
+                    lineNumber = sourceLocation?.startLine ?: -1
+                    columnNumber = sourceLocation?.startColumn ?: -1
+                    sourceName = sourceLocation?.source?.name ?: ""
+                    errorMsg = throwable.message ?: throwable.toString()
                 }
                 else -> {
-                    Triple("", -1, -1) to (throwable.message ?: throwable.toString())
+                    sourceName = ""
+                    lineNumber = -1
+                    columnNumber = -1
+                    errorMsg = throwable.message ?: throwable.toString()
                 }
             }
 
