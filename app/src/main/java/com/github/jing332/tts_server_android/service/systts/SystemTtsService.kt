@@ -337,64 +337,64 @@ class SystemTtsService : TextToSpeechService(), IEventDispatcher {
         val enabledBgm = request.params.getBoolean(PARAM_BGM_ENABLED, true)
         mTtsManager?.context?.cfg?.bgmEnabled = { enabledBgm }
 
-        runBlocking {
-            var cfgId: Long? = getConfigIdFromVoiceName(request.voiceName ?: "").onFailure {
-                longToast(R.string.voice_name_bad_format)
-                callback.error(TextToSpeech.ERROR_INVALID_REQUEST)
-                callback.done()
-                return@runBlocking
-            }.value
+        // 🔴 修复：移除 runBlocking，避免在系统 TTS 线程上阻塞导致 ANR
+        // 直接在 mScope 中启动合成任务
+        val configResult = getConfigIdFromVoiceName(request.voiceName ?: "")
+        configResult.onFailure {
+            longToast(R.string.voice_name_bad_format)
+            callback.error(TextToSpeech.ERROR_INVALID_REQUEST)
+            callback.done()
+            return
+        }
 
-            val exceptionHandler = CoroutineExceptionHandler { _, e ->
-                Log.e(TAG, "Synthesize Crash Caught: ${e.message}", e)
-                callback.error(TextToSpeech.ERROR_SYNTHESIS)
-                callback.done()
-            }
+        val cfgId = configResult.value
+        val exceptionHandler = CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "Synthesize Crash Caught: ${e.message}", e)
+            callback.error(TextToSpeech.ERROR_SYNTHESIS)
+            callback.done()
+        }
 
-            synthesizerJob = mScope.launch(exceptionHandler) {
-                var isAudioOutputted = false
-                try {
-                    // 🛠️ 增加 125 秒总保护
-                    withTimeoutOrNull(125000L) {
-                        mTtsManager?.synthesize(
-                            params = SystemParams(text = request.charSequenceText.toString()),
-                            forceConfigId = cfgId,
-                            callback = object :
-                                com.github.jing332.tts.synthesizer.SynthesisCallback {
-                                override fun onSynthesizeStart(sampleRate: Int) {
-                                    callback.start(
-                                        /* sampleRateInHz = */ sampleRate,
-                                        /* audioFormat = */ AudioFormat.ENCODING_PCM_16BIT,
-                                        /* channelCount = */ 1
-                                    )
-                                }
-
-                                override fun onSynthesizeAvailable(audio: ByteArray) {
-                                    isAudioOutputted = true
-                                    writeToCallBack(callback, audio)
-                                }
-
+        synthesizerJob = mScope.launch(exceptionHandler) {
+            var isAudioOutputted = false
+            try {
+                // 🛠️ 增加 125 秒总保护
+                withTimeoutOrNull(125000L) {
+                    mTtsManager?.synthesize(
+                        params = SystemParams(text = request.charSequenceText.toString()),
+                        forceConfigId = cfgId,
+                        callback = object :
+                            com.github.jing332.tts.synthesizer.SynthesisCallback {
+                            override fun onSynthesizeStart(sampleRate: Int) {
+                                callback.start(
+                                    /* sampleRateInHz = */ sampleRate,
+                                    /* audioFormat = */ AudioFormat.ENCODING_PCM_16BIT,
+                                    /* channelCount = */ 1
+                                )
                             }
-                        )
-                    }?.onSuccess {
-                        // 如果插件“跳过”了重试且没给音频，向系统报错
-                        if (!isAudioOutputted) {
-                            callback.error(TextToSpeech.ERROR_NETWORK_TIMEOUT)
-                        }
-                    }?.onFailure {
-                        handleSynthesisError(it, callback)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Synthesize Interrupted: ${e.message}")
-                    callback.error(TextToSpeech.ERROR_SYNTHESIS)
-                } finally {
-                    // 🛠️ 结案铁律：确保必须调用 done()，防止队列挂起
-                    callback.done()
-                    if (lastTtsCallback == callback) lastTtsCallback = null
-                }
-            }
 
-            synthesizerJob?.join()
+                            override fun onSynthesizeAvailable(audio: ByteArray) {
+                                isAudioOutputted = true
+                                writeToCallBack(callback, audio)
+                            }
+
+                        }
+                    )
+                }?.onSuccess {
+                    // 如果插件"跳过"了重试且没给音频，向系统报错
+                    if (!isAudioOutputted) {
+                        callback.error(TextToSpeech.ERROR_NETWORK_TIMEOUT)
+                    }
+                }?.onFailure {
+                    handleSynthesisError(it, callback)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Synthesize Interrupted: ${e.message}")
+                callback.error(TextToSpeech.ERROR_SYNTHESIS)
+            } finally {
+                // 🛠️ 结案铁律：确保必须调用 done()，防止队列挂起
+                callback.done()
+                if (lastTtsCallback == callback) lastTtsCallback = null
+            }
         }
 
 

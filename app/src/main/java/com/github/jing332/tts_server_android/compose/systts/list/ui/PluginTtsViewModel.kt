@@ -54,6 +54,8 @@ class PluginTtsViewModel(app: Application) : AndroidViewModel(app) {
         if (this::engine.isInitialized) {
             if (plugin == null && engine.plugin.pluginId == source.pluginId) return
             if (plugin != null && engine.plugin.pluginId == plugin.pluginId) return
+            // 切换插件时销毁旧的引擎，释放 GraalVM Context
+            runCatching { engine.destroy() }
         }
 
         engine = if (plugin == null)
@@ -62,6 +64,14 @@ class PluginTtsViewModel(app: Application) : AndroidViewModel(app) {
 
         engine.console = JsConsoleManager.ui
         engine.source = source
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 清理引擎资源，释放 GraalVM Context
+        if (this::engine.isInitialized) {
+            runCatching { engine.destroy() }
+        }
     }
 
     private fun getPluginFromDB(id: String) =

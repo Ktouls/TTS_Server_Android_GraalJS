@@ -66,6 +66,7 @@ open class PluginTtsProvider(
     override fun onDestroy() {
         state = EngineState.Uninitialized()
         mEngine?.onStop()
+        mEngine?.destroy() // 释放 GraalVM Context，避免内存泄漏
         mEngine = null
     }
 }

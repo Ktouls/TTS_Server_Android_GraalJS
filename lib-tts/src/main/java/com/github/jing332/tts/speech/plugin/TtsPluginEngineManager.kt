@@ -17,4 +17,10 @@ object TtsPluginEngineManager : AbstractCachedManager<String, TtsPluginUiEngineV
             engine
         }
     }
+
+    // 缓存移除时销毁引擎，释放 GraalVM Context
+    override fun onCacheRemove(key: String, value: TtsPluginUiEngineV2): Boolean {
+        runCatching { value.destroy() }
+        return false // 不延长缓存时间
+    }
 }

@@ -4,9 +4,13 @@ import com.github.jing332.script.BackstageWebView
 import com.github.michaelbull.result.onFailure
 import com.github.michaelbull.result.onSuccess
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 class GraalJSGlobalWebview {
     companion object {
+        // 🟡 优化：添加 30 秒超时保护，避免 WebView 加载失败时永久阻塞
+        private const val WEBVIEW_TIMEOUT_MS = 30000L
+
         fun loadUrl(url: String, headers: Map<CharSequence, CharSequence>? = null, script: String? = null): String? {
             val js = script ?: BackstageWebView.JS
             val webview = BackstageWebView(
@@ -15,7 +19,11 @@ class GraalJSGlobalWebview {
                     ?: emptyMap(),
                 js = js,
             )
-            val ret = runBlocking { webview.getHtmlResponse() }
+            val ret = runBlocking {
+                withTimeout(WEBVIEW_TIMEOUT_MS) {
+                    webview.getHtmlResponse()
+                }
+            }
             ret.onSuccess { return it }.onFailure {
                 if (it is BackstageWebView.Error.E)
                     throw RuntimeException(it.description)
@@ -31,7 +39,11 @@ class GraalJSGlobalWebview {
                     ?: emptyMap(),
                 js = js
             )
-            val ret = runBlocking { webview.getHtmlResponse() }
+            val ret = runBlocking {
+                withTimeout(WEBVIEW_TIMEOUT_MS) {
+                    webview.getHtmlResponse()
+                }
+            }
             ret.onSuccess { return it }.onFailure {
                 if (it is BackstageWebView.Error.E)
                     throw RuntimeException(it.description)

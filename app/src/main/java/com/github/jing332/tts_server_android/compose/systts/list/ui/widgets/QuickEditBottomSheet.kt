@@ -11,12 +11,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.jing332.database.entities.systts.SystemTtsV2
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,16 +35,23 @@ fun QuickEditBottomSheet(
     }
     val callbacks = rememberSaveCallBacks()
     val scope = rememberCoroutineScope()
+    var isDismissed by remember { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = {
-        val ret = runBlocking {
+        // 🔴 修复：移除 runBlocking，避免阻塞 UI 线程导致 ANR
+        scope.launch {
+            var allValid = true
             for (callback in callbacks) {
-                if (!callback.onSave()) return@runBlocking false
+                if (!callback.onSave()) {
+                    allValid = false
+                    break
+                }
             }
-            true
+            if (allValid && !isDismissed) {
+                isDismissed = true
+                onDismissRequest()
+            }
         }
-
-        if (ret) onDismissRequest()
     }) {
         Column(
             Modifier
