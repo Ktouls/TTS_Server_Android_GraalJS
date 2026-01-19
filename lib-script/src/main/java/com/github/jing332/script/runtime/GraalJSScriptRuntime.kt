@@ -3,6 +3,7 @@ package com.github.jing332.script.runtime
 import com.github.jing332.script.runtime.console.Console
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.HostAccess
+import org.graalvm.polyglot.Value
 
 open class GraalJSScriptRuntime(
     var environment: Environment,
@@ -90,9 +91,10 @@ open class GraalJSScriptRuntime(
         val ctx = context ?: sharedContext
         bindings.putMember("WebSocket", ctx.asValue { args: Array<Value> ->
             val url = if (args.isNotEmpty()) args[0].asString() else ""
-            val headers = if (args.size > 1) {
+            val headers = if (args.size > 1 && args[1].hasMembers()) {
                 val headersMap = mutableMapOf<CharSequence, CharSequence>()
-                args[1].memberKeys.forEach { key ->
+                val memberKeys = args[1].memberKeys
+                for (key in memberKeys) {
                     headersMap[key] = args[1].getMember(key).asString()
                 }
                 headersMap

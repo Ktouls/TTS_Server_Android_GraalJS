@@ -30,8 +30,8 @@ open class GraalJSScriptEngine(val runtime: GraalJSScriptRuntime) :
     override fun execute(source: ScriptSource): Any? {
         val graalSource = when (source) {
             is ReaderScriptSource -> {
-                Source.newBuilder("js", source.reader)
-                    .name(source.sourceName)
+                val readerContent = source.reader.readText()
+                Source.newBuilder("js", readerContent, source.sourceName)
                     .cached(false)
                     .build()
             }
