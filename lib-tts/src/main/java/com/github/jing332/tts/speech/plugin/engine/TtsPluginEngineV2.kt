@@ -75,6 +75,10 @@ open class TtsPluginEngineV2(val context: Context, var plugin: Plugin) {
     fun onLoad(): Any? = runCatching { engine.invokeMethod(pluginJsObj, FUNC_ON_LOAD) }.getOrNull()
     fun onStop(): Any? = runCatching { engine.invokeMethod(pluginJsObj, FUNC_ON_STOP) }.getOrNull()
 
+    fun destroy() {
+        engine.destroy()
+    }
+
     private fun handleAudioResult(result: Any?): InputStream? {
         if (result == null) return null
         return when (result) {
