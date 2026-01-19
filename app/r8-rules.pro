@@ -10,6 +10,16 @@
 -dontwarn java.lang.invoke.CallSite
 -dontwarn java.lang.invoke.ConstantCallSite
 
+# 忽略其他缺失的 Java API 类
+-dontwarn java.lang.reflect.AnnotatedType
+-dontwarn javax.script.**
+-dontwarn kotlinx.coroutines.slf4j.MDCContext
+
+# 忽略可选依赖的类
+-dontwarn coil3.PlatformContext
+-dontwarn com.drake.brv.PageRefreshLayout
+-dontwarn com.drake.statelayout.StateLayout
+
 # 保留所有引用这些类的代码
 -keep class * {
     *** getModule(...);
@@ -25,4 +35,8 @@
     *** *(java.lang.invoke.MethodHandles);
     *** *(java.lang.invoke.VarHandle);
     *** *(java.lang.invoke.CallSite);
+    *** *(java.lang.reflect.AnnotatedType);
+    *** *(javax.script.ScriptEngine);
+    *** *(javax.script.ScriptEngineManager);
+    *** *(kotlinx.coroutines.slf4j.MDCContext);
 }
