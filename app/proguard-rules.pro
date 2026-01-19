@@ -16,11 +16,11 @@
 # GraalVM Polyglot and Truffle - Critical for GraalJS engine
 -keepattributes Signature,InnerClasses,EnclosingMethod
 
-# Suppress warnings for missing GraalVM JVMCI classes (not used on Android)
--dontwarn jdk.vm.ci.**
--dontwarn com.oracle.truffle.api.**
--dontwarn com.oracle.truffle.runtime.**
--dontwarn com.oracle.svm.core.annotate.**
+# Suppress ALL warnings for missing GraalVM and related classes (not used on Android)
+-dontwarn jdk.**
+-dontwarn com.oracle.**
+-dontwarn org.graalvm.**
+-dontwarn com.ibm.icu.**
 
 # Keep all GraalVM Polyglot classes
 -keep class org.graalvm.polyglot.** { *; }
