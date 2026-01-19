@@ -49,7 +49,7 @@ fun LinkUploadSelectionDialog(onDismissRequest: () -> Unit, json: String) {
                     runCatching {
                         loading = true
                         val url =
-                            withIO { (value as DirectUploadFunction).invoke(json, engine) }
+                            withIO { (value as DirectUploadFunction).invoke(json, engine.engine) }
                                 ?: throw Exception("url is null")
                         ClipboardUtils.copyText("TTS Server", url)
                         context.longToast(R.string.copied_url)

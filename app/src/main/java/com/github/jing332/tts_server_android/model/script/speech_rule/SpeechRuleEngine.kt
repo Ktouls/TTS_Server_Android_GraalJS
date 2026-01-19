@@ -71,7 +71,7 @@ class SpeechRuleEngine(
             runCatching {
                 rule.version = getMember("version")?.asInt() ?: 0
             }.onFailure {
-                throw NumberFormatException(context.getString(R.string.plugin_bad_format))
+                throw NumberFormatException(this@SpeechRuleEngine.context.getString(R.string.plugin_bad_format))
             }
         }
     }

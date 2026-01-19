@@ -23,7 +23,7 @@ class LinkUploadRuleViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun invoke(function: DirectUploadFunction) {
         console.info("${function.name} ...")
-        val url = function.invoke("""{"test":"test"}""")
+        val url = function.invoke("""{"test":"test"}""", engine.engine)
         console.info("url: $url")
     }
 
