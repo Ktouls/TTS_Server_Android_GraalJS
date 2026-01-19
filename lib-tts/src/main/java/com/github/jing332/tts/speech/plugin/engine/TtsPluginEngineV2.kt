@@ -86,8 +86,10 @@ open class TtsPluginEngineV2(val context: Context, var plugin: Plugin) {
             }
             is Value -> {
                 when {
-                    result.isBuffer || result.hasArrayElements() -> {
-                        val bytes = result.as(ByteArray::class.java)
+                    result.hasArrayElements() -> {
+                        val bytes = ByteArray(result.arraySize.toInt()) { i ->
+                            result.getArrayElement(i.toLong()).asByte()
+                        }
                         ByteArrayInputStream(bytes)
                     }
                     result.isString -> {

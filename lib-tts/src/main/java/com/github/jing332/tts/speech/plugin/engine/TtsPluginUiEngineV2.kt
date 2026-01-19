@@ -6,7 +6,6 @@ import android.widget.LinearLayout
 import com.github.jing332.common.utils.dp
 import com.github.jing332.common.utils.toCountryFlagEmoji
 import com.github.jing332.database.entities.plugin.Plugin
-import com.github.jing332.script.toMap
 import org.graalvm.polyglot.Value
 import java.util.Locale
 
@@ -69,22 +68,33 @@ class TtsPluginUiEngineV2(context: Context, plugin: Plugin) : TtsPluginEngineV2(
     }
 
     fun getLocales(): Map<String, String> {
-        return engine.invokeMethod(editUiJsObject, FUNC_LOCALES).run {
-            when (this) {
-                is List<*> -> this.associate {
-                    val locale = Locale.forLanguageTag(it.toString())
-                    val displayName = locale.country.toCountryFlagEmoji() + " " + locale.displayName
-                    it.toString() to displayName
-                }
-
-                is Map<*, *> -> {
-                    this.map { (key, value) ->
-                        key.toString() to value.toString()
-                    }.toMap()
-                }
-
-                else -> emptyMap()
+        val result = engine.invokeMethod(editUiJsObject, FUNC_LOCALES)
+        return when (result) {
+            is List<*> -> result.associate {
+                val locale = Locale.forLanguageTag(it.toString())
+                val displayName = locale.country.toCountryFlagEmoji() + " " + locale.displayName
+                it.toString() to displayName
             }
+
+            is Map<*, *> -> {
+                result.map { (key, value) ->
+                    key.toString() to value.toString()
+                }.toMap()
+            }
+
+            is Value -> {
+                if (!result.hasMembers()) emptyMap()
+                else {
+                    val map = mutableMapOf<String, String>()
+                    for (key in result.memberKeys) {
+                        val value = result.getMember(key)
+                        map[key] = value.toString()
+                    }
+                    map
+                }
+            }
+
+            else -> emptyMap()
         }
     }
 

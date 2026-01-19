@@ -124,8 +124,11 @@ class JsBridgeInputStream : InputStream() {
                     is String -> writeBytes(data.toByteArray())
                     else -> {
                         // Try to convert GraalJS Value to ByteArray
-                        if (data is org.graalvm.polyglot.Value && data.hasBuffer()) {
-                            writeBytes(data.asBuffer())
+                        if (data is org.graalvm.polyglot.Value && data.hasArrayElements()) {
+                            val bytes = ByteArray(data.arraySize.toInt()) { i ->
+                                data.getArrayElement(i.toLong()).asByte()
+                            }
+                            writeBytes(bytes)
                         }
                     }
                 }
@@ -149,7 +152,7 @@ class JsBridgeInputStream : InputStream() {
             override fun error(data: Any?) {
                 logger.debug { "error(${data})" }
 
-                val (sourceName, lineNumber, columnNumber, errorMsg) = when (data) {
+                val errorInfo = when (data) {
                     is PolyglotException -> {
                         val sourceLocation = data.sourceLocation
                         val line = sourceLocation?.startLine ?: -1
@@ -161,6 +164,9 @@ class JsBridgeInputStream : InputStream() {
                         Triple("", -1, -1) to (data?.toString() ?: "Unknown error")
                     }
                 }
+
+                val (locationTriple, errorMsg) = errorInfo
+                val (sourceName, lineNumber, columnNumber) = locationTriple
 
                 errorCause = ScriptException(
                     sourceName = sourceName,
