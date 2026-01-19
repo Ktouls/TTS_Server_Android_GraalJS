@@ -99,7 +99,6 @@ open class GraalJSScriptRuntime(
         bindings.putMember("Buffer", GraalJSBuffer)
 
         // Initialize WebSocket constructor
-        val ctx = context ?: createContext()
         bindings.putMember("WebSocket", ctx.asValue { args: Array<Value> ->
             val url = if (args.isNotEmpty()) args[0].asString() else ""
             val headers = if (args.size > 1 && args[1].hasMembers()) {
