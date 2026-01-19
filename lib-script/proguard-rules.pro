@@ -67,6 +67,8 @@
 # Android-specific: Suppress warnings for Java 9+ module system
 -dontwarn java.lang.module.**
 -dontwarn java.lang.Class
+-dontwarn java.lang.Module
+-dontwarn java.lang.invoke.**
 
 # Keep all GraalVM JS engine classes
 -keep class org.graalvm.js.** { *; }

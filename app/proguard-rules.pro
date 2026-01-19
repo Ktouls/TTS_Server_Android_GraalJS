@@ -24,9 +24,18 @@
 -dontwarn java.lang.module.**
 -dontwarn jdk.internal.misc.**
 
-# Android-specific: don't optimize Java 9+ module system calls that GraalVM tries to use
--keepclassmembers class java.lang.Class {
-    public java.lang.Module getModule();
+# Android-specific: Ignore missing Java 9+ classes used by GraalVM
+-dontwarn java.lang.Module
+-dontwarn java.lang.invoke.MethodHandle
+
+# Keep classes that reference missing module system
+-keep class * {
+    *** getModule(...);
+}
+
+# Don't try to shrink/obfuscate method handles
+-keepclassmembers class * extends java.lang.invoke.MethodHandle {
+    *;
 }
 
 # Keep all GraalVM Polyglot classes
