@@ -10,10 +10,19 @@ open class GraalJSScriptRuntime(
     var console: Console = Console(),
 ) {
     companion object {
+        // 共享 Engine，避免多次创建导致的性能开销和模块系统问题
+        @JvmStatic
+        private val sharedEngine = try {
+            org.graalvm.polyglot.Engine.newBuilder()
+                .build()
+        } catch (e: Exception) {
+            // 如果 Engine 创建失败，抛出异常让上层处理
+            throw RuntimeException("Failed to initialize GraalVM Engine: ${e.message}", e)
+        }
+
         init {
-            // Android 兼容性：禁用 GraalVM 的模块系统相关功能
+            // Android 兼容性配置
             System.setProperty("polyglot.engine.WarnInterpreterOnly", "false")
-            System.setProperty("polyglot", "true")
         }
 
         // 禁用 sharedContext，因为 GraalVM 23.1.2 在 Android 上有兼容性问题
@@ -22,6 +31,7 @@ open class GraalJSScriptRuntime(
         @Suppress("UNUSED")
         fun createSharedContext(): Context {
             return Context.newBuilder("js")
+                .engine(sharedEngine)
                 .allowAllAccess(false)
                 .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup { className ->
@@ -37,23 +47,28 @@ open class GraalJSScriptRuntime(
     private var context: Context? = null
 
     fun createContext(): Context {
-        val ctx = Context.newBuilder("js")
-            .allowAllAccess(false)
-            .allowHostAccess(HostAccess.newBuilder(HostAccess.ALL)
-                .allowArrayAccess(true)
-                .allowListAccess(true)
-                .allowMapAccess(true)
-                .build())
-            .allowHostClassLookup { className ->
-                !className.startsWith("java.lang.reflect.") &&
-                !className.startsWith("dalvik.system.") &&
-                !className.contains("android.app.ActivityThread")
-            }
-            .allowHostClassLoading(true)
-            .build()
+        try {
+            val ctx = Context.newBuilder("js")
+                .engine(sharedEngine)
+                .allowAllAccess(false)
+                .allowHostAccess(HostAccess.newBuilder(HostAccess.ALL)
+                    .allowArrayAccess(true)
+                    .allowListAccess(true)
+                    .allowMapAccess(true)
+                    .build())
+                .allowHostClassLookup { className ->
+                    !className.startsWith("java.lang.reflect.") &&
+                    !className.startsWith("dalvik.system.") &&
+                    !className.contains("android.app.ActivityThread")
+                }
+                .allowHostClassLoading(true)
+                .build()
 
-        context = ctx
-        return ctx
+            context = ctx
+            return ctx
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to create GraalVM Context: ${e.message}", e)
+        }
     }
 
     fun init() {

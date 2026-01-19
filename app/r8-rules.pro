@@ -20,6 +20,17 @@
 -dontwarn com.drake.brv.PageRefreshLayout
 -dontwarn com.drake.statelayout.StateLayout
 
+# 假设 Class.getModule() 存在并返回 null，避免 NoSuchMethodError
+# 这是 GraalVM 在 Android 上运行的关键修复
+-assumenosideeffects class java.lang.Class {
+    public java.lang.Module getModule();
+}
+
+# 假设 Module 相关方法存在
+-assumenosideeffects class java.lang.Module {
+    *** *(...);
+}
+
 # 保留所有引用这些类的代码
 -keep class * {
     *** getModule(...);

@@ -50,14 +50,20 @@ class PluginTtsViewModel(app: Application) : AndroidViewModel(app) {
         } as TextToSpeechProvider<TextToSpeechSource>
     }
 
+    // 标记引擎是否从缓存获取，避免重复销毁
+    private var isEngineFromCache = false
+
     private fun initEngine(plugin: Plugin?, source: PluginTtsSource) {
         if (this::engine.isInitialized) {
             if (plugin == null && engine.plugin.pluginId == source.pluginId) return
             if (plugin != null && engine.plugin.pluginId == plugin.pluginId) return
-            // 切换插件时销毁旧的引擎，释放 GraalVM Context
-            runCatching { engine.destroy() }
+            // 切换插件时销毁旧的引擎（只有非缓存的才销毁）
+            if (!isEngineFromCache) {
+                runCatching { engine.destroy() }
+            }
         }
 
+        isEngineFromCache = (plugin == null)
         engine = if (plugin == null)
             TtsPluginEngineManager.get(getApplication<Application>() as Context, getPluginFromDB(source.pluginId))
         else TtsPluginUiEngineV2(getApplication<Application>() as Context, plugin).apply { eval() }
@@ -68,8 +74,8 @@ class PluginTtsViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         super.onCleared()
-        // 清理引擎资源，释放 GraalVM Context
-        if (this::engine.isInitialized) {
+        // 只销毁手动创建的引擎，缓存的引擎由缓存管理器统一管理
+        if (this::engine.isInitialized && !isEngineFromCache) {
             runCatching { engine.destroy() }
         }
     }
