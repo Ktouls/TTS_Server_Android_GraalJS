@@ -1,6 +1,6 @@
 [versions]
 compileSdk = "35"
-minSdk = "26"
+minSdk = "21"
 targetSdk = "35"
 
 coreKtx = "1.15.0"
@@ -47,7 +47,7 @@ desugar = "2.1.5"
 splitties = "3.0.0"
 
 hanlp = "portable-1.8.6"
-graalvm = "20.3.13"
+graaljs = "20.3.13"
 logging = "7.0.0"
 slf4j = "2.0.16"
 logback = "1.5.7"
@@ -143,8 +143,8 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logback-android = { module = "com.github.tony19:logback-android", version.ref = "logback-android" }
 hanlp = { group = "com.hankcs", name = "hanlp", version.ref = "hanlp" }
-graalvm-polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "graalvm" }
-graalvm-js = { module = "org.graalvm.polyglot:js", version.ref = "graalvm" }
+graalvm-js = { module = "org.graalvm.js:js", version.ref = "graaljs" }
+graalvm-js-scriptengine = { module = "org.graalvm.js:js-scriptengine", version.ref = "graaljs" }
 
 # 👇👇👇 添加库定义 👇👇👇
 sardine = { group = "com.github.thegrizzlylabs", name = "sardine-android", version.ref = "sardine" }

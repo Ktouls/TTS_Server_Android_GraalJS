@@ -1,36 +1,39 @@
 package com.github.jing332.script
 
-import android.content.Context as AndroidContext
-import org.graalvm.polyglot.Context
+import android.content.Context
 import org.graalvm.polyglot.Value
-import java.io.InputStreamReader
 
-class JsBeautify(context: AndroidContext) {
-    private val graalContext: Context
-    private var formatJsFunc: Value
+/**
+ * GraalJS 版本的 JS 代码美化工具
+ * 原本使用 Rhino 的 Context.enter()，现改为 GraalJS
+ */
+class JsBeautify(context: Context) {
+    private var formatJsFunc: Value? = null
 
     init {
-        graalContext = org.graalvm.polyglot.Context.newBuilder("js")
-            .allowAllAccess(false)
-            .allowHostAccess(org.graalvm.polyglot.HostAccess.ALL)
-            .build()
+        GraalJsRuntime.create().use { graalContext ->
+            val source = context.assets.open("js/beautifier.js").bufferedReader().readText()
 
-        val source = org.graalvm.polyglot.Source.newBuilder(
-            "js",
-            InputStreamReader(context.assets.open("js/beautifier.js"), Charsets.UTF_8),
-            "beautifier.js"
-        ).build()
+            graalContext.eval("js", source)
 
-        graalContext.eval(source)
-        formatJsFunc = graalContext.getBindings("js").getMember("js_beautify")
+            // 获取全局的 js_beautify 函数
+            val bindings = graalContext.getBindings("js")
+            formatJsFunc = bindings.getMember("js_beautify")
+        }
     }
 
+    /**
+     * 格式化 JavaScript 代码
+     */
     fun format(code: String): String {
-        val result = formatJsFunc.execute(code)
-        return result.asString()
-    }
+        val func = formatJsFunc
+            ?: throw IllegalStateException("js_beautify function not initialized")
 
-    fun close() {
-        graalContext.close()
+        if (!func.canExecute()) {
+            throw IllegalStateException("js_beautify is not a function")
+        }
+
+        val result = func.execute(code)
+        return result.asString()
     }
 }

@@ -66,8 +66,6 @@ open class PluginTtsProvider(
     override fun onDestroy() {
         state = EngineState.Uninitialized()
         mEngine?.onStop()
-        // 不销毁引擎，因为它是从 TtsPluginEngineManager 缓存中获取的
-        // 引擎的生命周期由缓存管理器统一控制，避免重复销毁导致崩溃
-        // mEngine = null  // 不需要置空，因为引擎可能在其他地方被复用
+        mEngine = null
     }
 }

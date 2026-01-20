@@ -5,4 +5,4 @@
 -keep class com.github.jing332.script.runtime.**{ *;}
 -keep class com.github.jing332.script.simple.**{ *;}
 
--keep class org.graalvm.**  { *; }
+-keep class org.mozilla.javascript.**  { *; }

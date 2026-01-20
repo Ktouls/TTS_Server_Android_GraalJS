@@ -9,7 +9,7 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 21
         testOptions.targetSdk = 34
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -27,26 +27,20 @@ android {
     }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    kotlin {
-        jvmToolchain(17)
+        jvmTarget = "11"
     }
 }
 
 dependencies {
     coreLibraryDesugaring(libs.desugar)
 
-    // GraalVM 20.3.13 - 本地 jar 文件
-    api(files("libs/js-20.3.13.jar"))
-    api(files("libs/truffle-api-20.3.13.jar"))
-    api(files("libs/graal-sdk-20.3.13.jar"))
-    api(files("libs/regex-20.3.13.jar"))
+    // GraalVM JavaScript Engine 20.3.13 - Rhino replacement
+    api(libs.graalvm.js)
+    api(libs.graalvm.js.scriptengine)
     implementation(project(":lib-common"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.okhttp)
@@ -54,6 +48,9 @@ dependencies {
     implementation(libs.logging)
     implementation(libs.slf4j.api)
     implementation(libs.logback.android)
+
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

@@ -6,7 +6,6 @@ import android.widget.LinearLayout
 import com.github.jing332.common.utils.dp
 import com.github.jing332.common.utils.toCountryFlagEmoji
 import com.github.jing332.database.entities.plugin.Plugin
-import org.graalvm.polyglot.Value
 import java.util.Locale
 
 class TtsPluginUiEngineV2(context: Context, plugin: Plugin) : TtsPluginEngineV2(context, plugin) {
@@ -30,8 +29,8 @@ class TtsPluginUiEngineV2(context: Context, plugin: Plugin) : TtsPluginEngineV2(
         return px.dp
     }
 
-    private val editUiJsObject: Value by lazy {
-        engine.getValue(OBJ_UI_JS)
+    private val editUiJsObject: Map<String, Any?> by lazy {
+        engine.get(OBJ_UI_JS) as? Map<String, Any?>
             ?: throw IllegalStateException("$OBJ_UI_JS not found")
     }
 
@@ -68,62 +67,58 @@ class TtsPluginUiEngineV2(context: Context, plugin: Plugin) : TtsPluginEngineV2(
     }
 
     fun getLocales(): Map<String, String> {
-        val result = engine.invokeMethod(editUiJsObject, FUNC_LOCALES)
-        return when (result) {
-            is List<*> -> result.associate {
-                val locale = Locale.forLanguageTag(it.toString())
-                val displayName = locale.country.toCountryFlagEmoji() + " " + locale.displayName
-                it.toString() to displayName
-            }
-
-            is Map<*, *> -> {
-                result.map { (key, value) ->
-                    key.toString() to value.toString()
-                }.toMap()
-            }
-
-            is Value -> {
-                if (!result.hasMembers()) emptyMap()
-                else {
-                    val map = mutableMapOf<String, String>()
-                    for (key in result.memberKeys) {
-                        val value = result.getMember(key)
-                        map[key] = value.toString()
-                    }
-                    map
+        return engine.invokeMethod(editUiJsObject, FUNC_LOCALES).run {
+            when (this) {
+                is List<*> -> this.associate {
+                    val locale = Locale.forLanguageTag(it.toString())
+                    val displayName = locale.country.toCountryFlagEmoji() + " " + locale.displayName
+                    it.toString() to displayName
                 }
-            }
 
-            else -> emptyMap()
+                is Map<*, *> -> {
+                    this.map { (key, value) ->
+                        key.toString() to value.toString()
+                    }.toMap()
+                }
+
+                else -> emptyMap()
+            }
         }
     }
 
     fun getVoices(locale: String): List<Voice> {
         return engine.invokeMethod(editUiJsObject, FUNC_VOICES, locale).run {
             when (this) {
-                is Value -> {
-                    if (!this.hasMembers()) emptyList()
-                    else {
-                        val result = mutableListOf<Voice>()
-                        for (key in this.memberKeys) {
-                            val value = this.getMember(key)
-                            var icon: String? = null
-                            var name: String = ""
+                is Map<*, *> -> {
+                    this.map { (key, value) ->
+                        key.toString() to value
+                    }.map { (key, value) ->
+                        var icon: String? = null
+                        var name: String = if (value is CharSequence) value.toString() else ""
 
-                            if (value.isString) {
-                                name = value.asString()
-                            } else if (value.hasMembers()) {
-                                icon = value.getMember("iconUrl")?.asString()
-                                    ?: value.getMember("icon")?.asString()
-                                name = value.getMember("name")?.asString() ?: ""
-                            }
+                        if (value is Map<*, *>) {
+                            icon = value["iconUrl"]?.toString()
+                                ?: value["icon"]?.toString()
 
-                            result.add(Voice(key, name, icon))
+                            name = value["name"]?.toString() ?: name
                         }
-                        result
+
+                        Voice(key, name, icon)
                     }
                 }
-
+                is List<*> -> {
+                    this.map { item ->
+                        when (item) {
+                            is Map<*, *> -> {
+                                val id = item["id"]?.toString() ?: ""
+                                val name = item["name"]?.toString() ?: ""
+                                val icon = item["iconUrl"]?.toString() ?: item["icon"]?.toString()
+                                Voice(id, name, icon)
+                            }
+                            else -> Voice(item.toString(), item.toString(), null)
+                        }
+                    }
+                }
                 else -> emptyList()
             }
         }

@@ -4,11 +4,11 @@
 let key = ttsrv.userVars['key'] || 'Default_KEY'
 let region = ttsrv.userVars['region'] || 'eastus'
 
-const format = "audio-24khz-48kbitrate-mono-mp3"
-const sampleRate = 24000 // 对应24khz. 格式后带有opus的实际采样率是其2倍
-const isNeedDecode = true // 是否需要解码，如 format 为 raw 请设为 false
+let format = "audio-24khz-48kbitrate-mono-mp3"
+let sampleRate = 24000 // 对应24khz. 格式后带有opus的实际采样率是其2倍
+let isNeedDecode = true // 是否需要解码，如 format 为 raw 请设为 false
 
-const PluginJS = {
+let PluginJS = {
     "name": "Azure",
     "id": "com.microsoft.azure",
     "author": "TTS Server",
@@ -27,24 +27,32 @@ const PluginJS = {
         rate = (rate * 2) - 100
         pitch = pitch - 50
 
-        const styleDegree = ttsrv.tts.data['styleDegree']
-        let styleDegreeValue = (styleDegree && Number(styleDegree) >= 0.01) ? styleDegree : '1.0'
+        let styleDegree = ttsrv.tts.data['styleDegree']
+        if (!styleDegree || Number(styleDegree) < 0.01) {
+            styleDegree = '1.0'
+        }
 
-        let style = ttsrv.tts.data['style'] || 'general'
-        let role = ttsrv.tts.data['role'] || 'default'
+        let style = ttsrv.tts.data['style']
+        let role = ttsrv.tts.data['role']
+        if (!style || style === "") {
+            style = 'general'
+        }
+        if (!role || role === "") {
+            role = 'default'
+        }
 
-        let textSsml
-        const langSkill = ttsrv.tts.data['languageSkill']
+        let textSsml = ''
+        let langSkill = ttsrv.tts.data['languageSkill']
         if (langSkill === "" || langSkill == null) {
             textSsml = escapeXml(text)
         } else {
             textSsml = `<lang xml:lang="${langSkill}">${escapeXml(text)}</lang>`
         }
 
-        const ssml = `
+        let ssml = `
         <speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="zh-CN">
             <voice name="${voice}">
-                <mstts:express-as style="${style}" styledegree="${styleDegreeValue}" role="${role}">
+                <mstts:express-as style="${style}" styledegree="${styleDegree}" role="${role}">
                     <prosody rate="${rate}%" pitch="${pitch}%" volume="${volume}">${textSsml}</prosody>
                 </mstts:express-as>
             </voice >
@@ -67,19 +75,19 @@ function checkKeyRegion() {
     }
 }
 
-const ttsUrl = 'https://' + region + '.tts.speech.microsoft.com/cognitiveservices/v1'
+let ttsUrl = 'https://' + region + '.tts.speech.microsoft.com/cognitiveservices/v1'
 
 function getAudioInternal(ssml, format) {
-    const headers = {
+    let headers = {
         'Ocp-Apim-Subscription-Key': key,
         "X-Microsoft-OutputFormat": format,
         "Content-Type": "application/ssml+xml",
     }
-    const resp = ttsrv.httpPost(ttsUrl, ssml, headers)
+    let resp = ttsrv.httpPost(ttsUrl, ssml, headers)
     if (resp.code() !== 200) {
         if (resp.code() === 401) {
             throw "401 Unauthorized 未授权，请检查密钥与区域是否正确。"
-        } else if (resp.code() === 403) {
+        }else if (resp.code() === 403) {
             throw "403 Forbidden 被禁止，您的Azure账户可能已被禁用。"
         }
 
@@ -101,7 +109,7 @@ let styleSpinner
 let roleSpinner
 let seekStyle
 
-const EditorJS = {
+let EditorJS = {
     //音频的采样率 编辑TTS界面保存时调用
     "getAudioSampleRate": function (locale, voice) {
         return sampleRate
@@ -112,10 +120,10 @@ const EditorJS = {
     },
 
     "getLocales": function () {
-        const locales = []
+        let locales = new Array()
 
-        voices.forEach(v => {
-            const loc = v["Locale"]
+        voices.forEach(function (v) {
+            let loc = v["Locale"]
             if (!locales.includes(loc)) {
                 locales.push(loc)
             }
@@ -127,14 +135,14 @@ const EditorJS = {
     // 当语言变更时调用
     "getVoices": function (locale) {
         currentVoices = new Map()
-        voices.forEach(v => {
+        voices.forEach(function (v) {
             if (v['Locale'] === locale) {
                 currentVoices.set(v['ShortName'], v)
             }
         })
 
-        const mm = {}
-        for (const [key, value] of currentVoices.entries()) {
+        let mm = {}
+        for (let [key, value] of currentVoices.entries()) {
             mm[key] = new java.lang.String(value['LocalName'] + ' (' + key + ')')
         }
         return mm
@@ -148,8 +156,8 @@ const EditorJS = {
             jsonStr = ttsrv.readTxtFile('voices.json')
         } else {
             checkKeyRegion()
-            const url = 'https://' + region + '.tts.speech.microsoft.com/cognitiveservices/voices/list'
-            const header = {
+            let url = 'https://' + region + '.tts.speech.microsoft.com/cognitiveservices/voices/list'
+            let header = {
                 "Ocp-Apim-Subscription-Key": key,
                 "Content-Type": "application/json",
             }
@@ -163,9 +171,9 @@ const EditorJS = {
     },
 
     "onLoadUI": function (ctx, linerLayout) {
-        const layout = new LinearLayout(ctx)
+        let layout = new LinearLayout(ctx)
         layout.orientation = LinearLayout.HORIZONTAL // 水平布局
-        const params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1)
+        let params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1)
 
         skillSpinner = JSpinner(ctx, "语言技能 (language skill)")
         linerLayout.addView(skillSpinner)
@@ -228,17 +236,17 @@ const EditorJS = {
     },
 
     "onVoiceChanged": function (locale, voiceCode) {
-        const vic = currentVoices.get(voiceCode)
+        let vic = currentVoices.get(voiceCode)
 
-        const locale2List = vic['SecondaryLocaleList']
+        let locale2List = vic['SecondaryLocaleList']
         let locale2Items = []
         let locale2Pos = 0
 
         if (locale2List) {
-            locale2Items.push(Item("默认", ""))
-            locale2List.forEach((v, i) => {
-                const loc = java.util.Locale.forLanguageTag(v)
-                const name = loc.getDisplayName(loc)
+            locale2Items.push(Item("默认 (default)", ""))
+            locale2List.map(function (v, i) {
+                let loc = java.util.Locale.forLanguageTag(v)
+                let name = loc.getDisplayName(loc)
                 locale2Items.push(Item(name, v))
                 if (v === ttsrv.tts.data['languageSkill'] + '') {
                     locale2Pos = i + 1
@@ -254,12 +262,12 @@ const EditorJS = {
             skillSpinner.visibility = View.VISIBLE
         }
 
-        const styles = vic['StyleList']
+        let styles = vic['StyleList']
         let styleItems = []
         let stylePos = 0
         if (styles) {
-            styleItems.push(Item("默认", ""))
-            styles.forEach((v, i) => {
+            styleItems.push(Item("默认 (general)", ""))
+            styles.map(function (v, i) {
                 styleItems.push(Item(getString(v), v))
                 if (v === ttsrv.tts.data['style'] + '') {
                     stylePos = i + 1 //算上默认的item 所以要 +1
@@ -271,12 +279,12 @@ const EditorJS = {
         styleSpinner.items = styleItems
         styleSpinner.selectedPosition = stylePos
 
-        const roles = vic['RolePlayList']
+        let roles = vic['RolePlayList']
         let roleItems = []
         let rolePos = 0
         if (roles) {
-            roleItems.push(Item("默认", ""))
-            roles.forEach((v, i) => {
+            roleItems.push(Item("默认 (default)", ""))
+            roles.map(function (v, i) {
                 roleItems.push(Item(getString(v), v))
                 if (v === ttsrv.tts.data['role'] + '') {
                     rolePos = i + 1 //算上默认的item 所以要 +1
@@ -288,7 +296,7 @@ const EditorJS = {
     }
 }
 
-const cnLocales = {
+let cnLocales = {
     "narrator": "旁白",
     "girl": "女孩",
     "boy": "男孩",
@@ -335,7 +343,7 @@ const cnLocales = {
     "unfriendly": "不友好",
 }
 
-const isZh = java.util.Locale.getDefault().getLanguage() == 'zh'
+let isZh = java.util.Locale.getDefault().getLanguage() == 'zh'
 
 function getString(key) {
     if (isZh) {

@@ -1,5 +1,5 @@
 # TTS插件
-> 插件的语言为Javascript，使用GraalJS作为JS解析器
+> 插件的语言为Javascript，使用Rhino作为JS解析器
 
 ```javascript
 let PluginJS = {

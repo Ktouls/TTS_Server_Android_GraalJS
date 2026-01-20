@@ -18,7 +18,12 @@ static def releaseTime() {
 }
 
 def version = "1." + releaseTime()
-def gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.trim())
+def gitCommits = 1
+try {
+    gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.trim())
+} catch (Exception e) {
+    logger.warn("Failed to get git commit count, using default value 1: ${e.message}")
+}
 
 android {
     compileSdk libs.versions.compileSdk.get().toInteger()
@@ -84,7 +89,7 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'r8-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             signingConfig signingConfigs.release
@@ -94,7 +99,13 @@ android {
     }
     packagingOptions {
         resources {
-            excludes += ['META-INF/*']
+            excludes += [
+                'META-INF/*',
+                'META-INF/services/javax.script.ScriptEngineFactory',
+                'META-INF/graalvm/language',
+                'META-INF/*.kotlin_module',
+                'META-INF/DEPENDENCIES'
+            ]
         }
     }
 

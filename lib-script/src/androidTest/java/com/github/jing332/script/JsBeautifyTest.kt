@@ -18,6 +18,10 @@ class JsBeautifyTest {
 
         val b = JsBeautify(InstrumentationRegistry.getInstrumentation().targetContext)
         println(b.format(code))
-        b.close()
+
+
+//        val engine = RhinoScriptEngine(RhinoScriptRuntime())
+//        engine.execute(code)
+
     }
 }

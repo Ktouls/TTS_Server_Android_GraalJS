@@ -1,4 +1,4 @@
-const SpeechRuleJS = {
+let SpeechRuleJS = {
     name: "旁白/对话",
     id: "ttsrv.multi_voice",
     author: "TTS Server",
@@ -13,11 +13,11 @@ const SpeechRuleJS = {
         text.split("").forEach((char, index) => {
             tmpStr += char;
 
-            if (char === '"') {
+            if (char === '“') {
                 endTag = "dialogue";
                 list.push({text: tmpStr, tag: "narration"});
                 tmpStr = "";
-            } else if (char === '"') {
+            } else if (char === '”') {
                 endTag = "narration";
                 tmpStr = tmpStr.slice(0, -1)
                 list.push({text: tmpStr, tag: "dialogue"});
@@ -31,9 +31,9 @@ const SpeechRuleJS = {
     },
 
     splitText(text) {
-        const separatorStr = "。？?！!;；"
+        let separatorStr = "。？?！!;；"
 
-        const list = []
+        let list = []
         let tmpStr = ""
         text.split("").forEach((char, index) => {
             tmpStr += char
@@ -46,7 +46,7 @@ const SpeechRuleJS = {
             }
         })
 
-        return list.filter(item =>  item.replace(/[""]/g, '').trim().length > 0);
+        return list.filter(item =>  item.replace(/[“”]/g, '').trim().length > 0);
     }
 
 };

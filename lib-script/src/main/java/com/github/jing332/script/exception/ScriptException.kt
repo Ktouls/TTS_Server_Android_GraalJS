@@ -18,36 +18,34 @@ open class ScriptException(
     override val message: String? = "",
     override val cause: Throwable? = null,
 ) : RuntimeException() {
+    var polyglotStackTrace: String? = null
+
+    override fun toString(): String {
+        return super.toString() + (polyglotStackTrace?.let { "\n$it" } ?: "")
+    }
+
     companion object {
         fun from(throwable: Throwable): ScriptException {
-            val sourceName: String
-            val lineNumber: Int
-            val columnNumber: Int
-            val errorMsg: String
-
-            when (throwable) {
+            return when (throwable) {
                 is PolyglotException -> {
-                    val sourceLocation = throwable.sourceLocation
-                    lineNumber = sourceLocation?.startLine ?: -1
-                    columnNumber = sourceLocation?.startColumn ?: -1
-                    sourceName = sourceLocation?.source?.name ?: ""
-                    errorMsg = throwable.message ?: throwable.toString()
+                    ScriptException(
+                        sourceName = throwable.sourceLocation?.sourceName ?: "",
+                        lineNumber = throwable.sourceLocation?.lineNumber ?: 0,
+                        columnNumber = throwable.sourceLocation?.columnNumber ?: 0,
+                        message = throwable.message,
+                        cause = throwable
+                    ).apply {
+                        polyglotStackTrace = throwable.polyglotStackTrace.toString()
+                    }
                 }
-                else -> {
-                    sourceName = ""
-                    lineNumber = -1
-                    columnNumber = -1
-                    errorMsg = throwable.message ?: throwable.toString()
-                }
+                else -> ScriptException(
+                    sourceName = "",
+                    lineNumber = 0,
+                    columnNumber = 0,
+                    message = throwable.message,
+                    cause = throwable
+                )
             }
-
-            return ScriptException(
-                sourceName,
-                lineNumber,
-                columnNumber,
-                errorMsg,
-                throwable
-            )
         }
     }
 }

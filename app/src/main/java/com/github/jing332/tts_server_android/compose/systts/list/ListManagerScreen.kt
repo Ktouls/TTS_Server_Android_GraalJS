@@ -78,7 +78,7 @@ import com.github.jing332.tts_server_android.compose.systts.replace.SearchType
 import com.github.jing332.tts_server_android.compose.systts.sizeToToggleableState
 import com.github.jing332.tts_server_android.constant.AppConst
 import com.github.jing332.tts_server_android.constant.SpeechTarget
-import com.github.jing332.tts_server_android.model.script.speech_rule.SpeechRuleEngine
+import com.github.jing332.tts_server_android.model.rhino.speech_rule.SpeechRuleEngine
 import com.github.jing332.tts_server_android.service.systts.SystemTtsService
 import com.github.jing332.tts_server_android.toCode
 import com.github.jing332.tts_server_android.ui.view.AppDialogs.displayErrorDialog

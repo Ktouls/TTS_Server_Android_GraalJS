@@ -1,4 +1,4 @@
-@file:Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
+@file:Suppress("OVERRIDE_DEPRECATION")
 
 package com.github.jing332.tts_server_android.service.forwarder
 

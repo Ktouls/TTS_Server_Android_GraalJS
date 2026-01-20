@@ -2,9 +2,6 @@ name: Build Debug
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - GraalJS
 
 jobs:
   build:
@@ -29,6 +26,7 @@ jobs:
           echo ALIAS_PASSWORD='${{ secrets.ALIAS_PASSWORD }}' >> local.properties
           echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}' >> local.properties
           echo KEY_PATH='./key.jks' >> local.properties
+          # 从Secrets读取无换行符Base64解码, 然后保存到到app/key.jks
           echo ${{ secrets.KEY_STORE }} | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
 
       - name: Build with Gradle
@@ -39,5 +37,5 @@ jobs:
       - name: Upload APK To Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "TTS-Server_debug_${{ github.run_number }}"
-          path: ${{env.outputs_dir}}/apk/app/debug/*.apk
+          name: "TTS-Server_debug"
+          path: ${{env.outputs_dir}}/apk/app/debug/*debug.apk

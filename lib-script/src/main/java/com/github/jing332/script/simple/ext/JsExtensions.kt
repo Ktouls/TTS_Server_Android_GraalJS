@@ -14,11 +14,6 @@ open class JsExtensions(open val context: Context, open val engineId: String = "
     JsCrypto,
     JsUserInterface {
 
-    // 提供 cacheDir 供 Environment 使用
-    val cacheDir: String
-        get() = context.getExternalFilesDir("plugin_cache")?.absolutePath
-            ?: context.filesDir.absolutePath
-
     @Suppress("MemberVisibilityCanBePrivate")
     @ScriptInterface
     fun getAudioSampleRate(audio: ByteArray): Int {

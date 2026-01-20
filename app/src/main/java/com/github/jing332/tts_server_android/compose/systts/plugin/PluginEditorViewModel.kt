@@ -108,6 +108,5 @@ class PluginEditorViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         super.onCleared()
         runCatching { mEngine?.onStop() }
-        runCatching { mEngine?.destroy() } // 释放 GraalVM Context，避免内存泄漏
     }
 }

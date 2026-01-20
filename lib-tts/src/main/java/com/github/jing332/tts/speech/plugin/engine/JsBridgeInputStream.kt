@@ -1,10 +1,11 @@
 package com.github.jing332.tts.speech.plugin.engine
 
 import androidx.annotation.Keep
+import com.github.jing332.script.engine.ScriptValueUtils
 import com.github.jing332.script.exception.ScriptException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.sync.Mutex
-import org.graalvm.polyglot.PolyglotException
+import org.graalvm.polyglot.Value
 import java.io.IOException
 import java.io.InputStream
 import java.io.PipedInputStream
@@ -122,17 +123,23 @@ class JsBridgeInputStream : InputStream() {
                 when (data) {
                     is ByteArray -> writeBytes(data)
                     is String -> writeBytes(data.toByteArray())
-                    else -> {
-                        // Try to convert GraalJS Value to ByteArray
-                        if (data is org.graalvm.polyglot.Value && data.hasArrayElements()) {
-                            val bytes = ByteArray(data.arraySize.toInt()) { i ->
-                                data.getArrayElement(i.toLong()).asByte()
-                            }
-                            writeBytes(bytes)
+                    is Value -> {
+                        val javaObj = ScriptValueUtils.toJavaType(data)
+                        when (javaObj) {
+                            is ByteArray -> writeBytes(javaObj)
+                            is IntArray -> writeBytes(ByteArray(javaObj.size * 4).apply {
+                                for (i in javaObj.indices) {
+                                    set(i * 4, (javaObj[i] shr 24).toByte())
+                                    set(i * 4 + 1, (javaObj[i] shr 16).toByte())
+                                    set(i * 4 + 2, (javaObj[i] shr 8).toByte())
+                                    set(i * 4 + 3, javaObj[i].toByte())
+                                }
+                            })
+                            else -> throw IllegalArgumentException("Unsupported JavaScript type for audio: ${javaObj.javaClass.name}")
                         }
                     }
+                    else -> throw IllegalArgumentException("Unsupported data type: ${data?.javaClass?.name ?: "null"}")
                 }
-
             }
 
             override fun close() {
@@ -152,28 +159,12 @@ class JsBridgeInputStream : InputStream() {
             override fun error(data: Any?) {
                 logger.debug { "error(${data})" }
 
-                val errorInfo = when (data) {
-                    is PolyglotException -> {
-                        val sourceLocation = data.sourceLocation
-                        val line = sourceLocation?.startLine ?: -1
-                        val column = sourceLocation?.startColumn ?: -1
-                        val source = sourceLocation?.source?.name ?: ""
-                        Triple(source, line, column) to (data.message ?: data.toString())
-                    }
-                    else -> {
-                        Triple("", -1, -1) to (data?.toString() ?: "Unknown error")
-                    }
-                }
-
-                val (locationTriple, errorMsg) = errorInfo
-                val (sourceName, lineNumber, columnNumber) = locationTriple
-
                 errorCause = ScriptException(
-                    sourceName = sourceName,
-                    lineNumber = lineNumber,
-                    columnNumber = columnNumber,
-                    message = errorMsg,
-                    cause = data as? Throwable
+                    sourceName = "",
+                    lineNumber = 0,
+                    columnNumber = 0,
+                    message = data?.toString() ?: "Unknown error",
+                    cause = null
                 )
                 try {
                     close()

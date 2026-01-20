@@ -3,8 +3,8 @@ package com.github.jing332.tts_server_android.compose.systts.directlink
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.github.jing332.script.runtime.console.Console
-import com.github.jing332.tts_server_android.model.script.direct_link_upload.DirectUploadEngine
-import com.github.jing332.tts_server_android.model.script.direct_link_upload.DirectUploadFunction
+import com.github.jing332.tts_server_android.model.rhino.direct_link_upload.DirectUploadEngine
+import com.github.jing332.tts_server_android.model.rhino.direct_link_upload.DirectUploadFunction
 
 class LinkUploadRuleViewModel(val app: Application) : AndroidViewModel(app) {
     private lateinit var engine: DirectUploadEngine
@@ -23,7 +23,7 @@ class LinkUploadRuleViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun invoke(function: DirectUploadFunction) {
         console.info("${function.name} ...")
-        val url = function.invoke("""{"test":"test"}""", engine.engine)
+        val url = function.invoke("""{"test":"test"}""")
         console.info("url: $url")
     }
 

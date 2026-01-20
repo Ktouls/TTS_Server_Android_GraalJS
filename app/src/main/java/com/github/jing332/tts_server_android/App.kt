@@ -34,6 +34,12 @@ class App : Application() {
             private set
 
         val context: Context by lazy { instance }
+
+        init {
+            // CRITICAL: Android Unsafe Crash Defense for GraalVM JavaScript
+            System.setProperty("truffle.js.InterpretedHelper", "true")
+            System.setProperty("truffle.TruffleRuntime", "com.oracle.truffle.api.impl.DefaultTruffleRuntime")
+        }
     }
 
     override fun attachBaseContext(base: Context) {

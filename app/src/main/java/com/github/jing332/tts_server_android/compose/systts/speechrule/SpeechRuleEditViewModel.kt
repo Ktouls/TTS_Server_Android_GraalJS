@@ -10,7 +10,7 @@ import com.github.jing332.database.entities.SpeechRule
 import com.github.jing332.database.entities.systts.TtsConfigurationDTO
 import com.github.jing332.script.runtime.console.Console
 import com.github.jing332.tts_server_android.constant.SpeechTarget
-import com.github.jing332.tts_server_android.model.script.speech_rule.SpeechRuleEngine
+import com.github.jing332.tts_server_android.model.rhino.speech_rule.SpeechRuleEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

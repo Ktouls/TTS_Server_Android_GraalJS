@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Parcelable
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -276,8 +275,7 @@ class FilePickerActivity : ComposeActivity() {
             kotlin.runCatching {
                 docCreate.launch(reqSaveFile.fileName)
             }.onFailure {
-                // 🟡 修复：移除 printStackTrace，使用 logger 记录
-                Log.e("FilePickerActivity", "System document picker error", it)
+                it.printStackTrace()
                 toast(R.string.sys_doc_picker_error)
                 useSystem = false
                 return saveFile()

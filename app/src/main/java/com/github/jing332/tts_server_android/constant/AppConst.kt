@@ -60,8 +60,7 @@ object AppConst {
                 appInfo.versionCode = info.versionCode.toLong()
             }
         } catch (e: Exception) {
-            // 🟡 修复：使用日志框架而非 printStackTrace
-            android.util.Log.e("AppConst", "Failed to get app info", e)
+            e.printStackTrace()
         }
         appInfo
     }

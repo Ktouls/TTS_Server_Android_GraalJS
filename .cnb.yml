@@ -1,0 +1,18 @@
+# CNB 构建配置文件
+version: "1.0"
+
+docker:
+  image: .ide/Dockerfile
+
+workflow:
+  # 构建 Docker 开发环境
+  - event: docker
+    command: docker build -f .ide/Dockerfile -t tts-server-dev .
+
+  # 验证 Gradle 环境配置
+  - event: build
+    command: docker run --rm -v $(pwd):/workspace tts-server-dev ./gradlew --version
+
+  # 执行 Release 构建（带签名）
+  - event: test
+    command: docker run --rm -v $(pwd):/workspace tts-server-dev ./gradlew assembleRelease --no-daemon

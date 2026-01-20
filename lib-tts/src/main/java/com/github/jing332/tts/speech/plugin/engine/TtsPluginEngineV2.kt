@@ -4,10 +4,11 @@ import android.content.Context
 import com.drake.net.Net
 import com.github.jing332.database.entities.plugin.Plugin
 import com.github.jing332.database.entities.systts.source.PluginTtsSource
-import com.github.jing332.script.engine.GraalJSScriptEngine
-import com.github.jing332.script.runtime.GraalJSNativeResponse
+import com.github.jing332.script.engine.GraalScriptEngine
+import com.github.jing332.script.engine.ScriptValueUtils
+import com.github.jing332.script.runtime.NativeResponse
 import com.github.jing332.script.runtime.console.Console
-import com.github.jing332.script.simple.GraalCompatScriptRuntime
+import com.github.jing332.script.simple.CompatScriptRuntime
 import com.github.jing332.script.source.toScriptSource
 import com.github.jing332.tts.speech.EmptyInputStream
 import kotlinx.coroutines.runInterruptible
@@ -15,7 +16,6 @@ import kotlinx.coroutines.sync.Mutex
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.graalvm.polyglot.Value
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
@@ -29,89 +29,72 @@ open class TtsPluginEngineV2(val context: Context, var plugin: Plugin) {
         const val FUNC_ON_STOP = "onStop"
     }
 
-    var console: Console
-        get() = engine.runtime.console
-        set(value) { engine.runtime.console = value }
+    var console: Console = Console()
 
     protected val ttsrv = TtsEngineContext(PluginTtsSource(), plugin.userVars, context, plugin.pluginId)
-    val runtime = GraalCompatScriptRuntime(ttsrv)
     var source: PluginTtsSource
         get() = ttsrv.tts
         set(value) { ttsrv.tts = value }
 
-    protected val pluginJsObj: Value
-        get() = engine.getValue(OBJ_PLUGIN_JS) ?: throw IllegalStateException("Object `$OBJ_PLUGIN_JS` not found")
+    protected val pluginJsObj: Any?
+        get() = engine.get(OBJ_PLUGIN_JS)
 
-    protected var engine: GraalJSScriptEngine = GraalJSScriptEngine(runtime)
+    protected var engine: GraalScriptEngine = GraalScriptEngine(context)
 
     open protected fun execute(script: String): Any? = engine.execute(script.toScriptSource(sourceName = plugin.pluginId))
 
     fun eval() {
         execute(plugin.code)
-        pluginJsObj.apply {
-            plugin.name = getMember("name")?.asString() ?: ""
-            plugin.pluginId = getMember("id")?.asString() ?: ""
-            plugin.author = getMember("author")?.asString() ?: ""
-            plugin.iconUrl = getMember("iconUrl")?.asString() ?: ""
-            plugin.defVars = try {
-                val varsValue = getMember("vars")
-                if (varsValue != null && varsValue.hasMembers()) {
-                    varsValue.memberKeys.associateWith { key ->
-                        val v = varsValue.getMember(key)
-                        if (v.hasMembers()) {
-                            v.memberKeys.associateWith { k -> v.getMember(k).toString() }
-                        } else {
-                            emptyMap()
-                        }
-                    }
-                } else {
-                    emptyMap()
-                }
-            } catch (_: Exception) { emptyMap() }
-            plugin.version = try { getMember("version")?.asInt() ?: -1 } catch (e: Exception) { -1 }
+        val obj = pluginJsObj
+        if (obj == null) {
+            throw IllegalStateException("Object `$OBJ_PLUGIN_JS` not found")
+        }
+        
+        // Extract plugin metadata from the JS object
+        plugin.name = engine.get("$OBJ_PLUGIN_JS.name")?.toString() ?: ""
+        plugin.pluginId = engine.get("$OBJ_PLUGIN_JS.id")?.toString() ?: ""
+        plugin.author = engine.get("$OBJ_PLUGIN_JS.author")?.toString() ?: ""
+        plugin.iconUrl = engine.get("$OBJ_PLUGIN_JS.iconUrl")?.toString() ?: ""
+        plugin.defVars = try { engine.get("$OBJ_PLUGIN_JS.vars") as? Map<String, Map<String, String>> ?: emptyMap() } catch (_: Exception) { emptyMap() }
+        
+        // Version conversion - handle both number and string
+        val versionValue = engine.get("$OBJ_PLUGIN_JS.version")
+        plugin.version = when (versionValue) {
+            is Number -> versionValue.toInt()
+            is String -> versionValue.toIntOrNull() ?: -1
+            else -> -1
         }
     }
 
-    fun onLoad(): Any? = runCatching { engine.invokeMethod(pluginJsObj, FUNC_ON_LOAD) }.getOrNull()
-    fun onStop(): Any? = runCatching { engine.invokeMethod(pluginJsObj, FUNC_ON_STOP) }.getOrNull()
-
-    fun destroy() {
-        engine.destroy()
-    }
+    fun onLoad(): Any? = runCatching { engine.invokeFunction("$OBJ_PLUGIN_JS.$FUNC_ON_LOAD") }.getOrNull()
+    fun onStop(): Any? = runCatching { engine.invokeFunction("$OBJ_PLUGIN_JS.$FUNC_ON_STOP") }.getOrNull()
 
     private fun handleAudioResult(result: Any?): InputStream? {
         if (result == null) return null
-        return when (result) {
-            is ByteArray -> ByteArrayInputStream(result)
-            is InputStream -> result
-            is GraalJSNativeResponse -> {
-                if (result.rawResponse?.isSuccessful == false) throw RuntimeException("HTTP Error: ${result.rawResponse?.code}")
-                result.rawResponse?.body?.byteStream()
-            }
-            is Value -> {
-                when {
-                    result.hasArrayElements() -> {
-                        val bytes = ByteArray(result.arraySize.toInt()) { i ->
-                            result.getArrayElement(i.toLong()).asByte()
-                        }
-                        ByteArrayInputStream(bytes)
-                    }
-                    result.isString -> {
-                        val str = result.asString()
-                        if (str.startsWith("http")) {
-                            val client = OkHttpClient.Builder()
-                                .connectTimeout(300, TimeUnit.SECONDS)
-                                .readTimeout(300, TimeUnit.SECONDS)
-                                .build()
-                            val resp = client.newCall(Request.Builder().url(str).build()).execute()
-                            if (!resp.isSuccessful) throw RuntimeException("URL Fetch Error: ${resp.code}")
-                            resp.body?.byteStream()
-                        } else throw IllegalStateException(str)
-                    }
-                    else -> throw IllegalArgumentException("Unsupported return type: ${result.javaClass.name}")
+        
+        return try {
+            ScriptValueUtils.toAudioInputStream(result)
+        } catch (e: IllegalArgumentException) {
+            // Fallback for other types (e.g., NativeResponse, URL strings)
+            when (result) {
+                is NativeResponse -> {
+                    if (result.rawResponse?.isSuccessful == false) throw RuntimeException("HTTP Error: ${result.rawResponse?.code}")
+                    result.rawResponse?.body?.byteStream()
                 }
+                is CharSequence -> {
+                    val str = result.toString()
+                    if (str.startsWith("http")) {
+                        val client = OkHttpClient.Builder()
+                            .connectTimeout(300, TimeUnit.SECONDS)
+                            .readTimeout(300, TimeUnit.SECONDS)
+                            .build()
+                        val resp = client.newCall(Request.Builder().url(str).build()).execute()
+                        if (!resp.isSuccessful) throw RuntimeException("URL Fetch Error: ${resp.code}")
+                        resp.body?.byteStream()
+                    } else throw IllegalStateException(str)
+                }
+                else -> throw IllegalArgumentException("Unsupported return type: ${result.javaClass.name}")
             }
-            else -> throw IllegalArgumentException("Unsupported return type: ${result.javaClass.name}")
         }
     }
 
@@ -121,7 +104,7 @@ open class TtsPluginEngineV2(val context: Context, var plugin: Plugin) {
         val ins = JsBridgeInputStream()
         val callback = ins.getCallback(mMutex) 
         val result = runInterruptible {
-            engine.invokeMethod(pluginJsObj, FUNC_GET_AUDIO_V2, request, callback)
+            engine.invokeFunction("$OBJ_PLUGIN_JS.$FUNC_GET_AUDIO_V2", request, callback)
                 ?: throw NoSuchMethodException("getAudioV2() not found")
         }
         return handleAudioResult(result) ?: ins
@@ -134,7 +117,7 @@ open class TtsPluginEngineV2(val context: Context, var plugin: Plugin) {
         // 一旦出错（暗号拦截或超时），抛出异常让 Service 处理，彻底根治 Bad audio format 0
         val result = try {
             runInterruptible {
-                engine.invokeMethod(pluginJsObj, FUNC_GET_AUDIO, text, locale, voice, r, v, p)
+                engine.invokeFunction("$OBJ_PLUGIN_JS.$FUNC_GET_AUDIO", text, locale, voice, r, v, p)
             }
         } catch (_: NoSuchMethodException) {
             return getAudioV2(mapOf("text" to text, "locale" to locale, "voice" to voice, "rate" to r, "speed" to r, "volume" to v, "pitch" to p))

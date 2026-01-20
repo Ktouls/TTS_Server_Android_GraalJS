@@ -14,8 +14,8 @@ import androidx.compose.ui.res.stringResource
 import com.drake.net.utils.withIO
 import com.github.jing332.tts_server_android.R
 import com.github.jing332.compose.widgets.AppSelectionDialog
-import com.github.jing332.tts_server_android.model.script.direct_link_upload.DirectUploadEngine
-import com.github.jing332.tts_server_android.model.script.direct_link_upload.DirectUploadFunction
+import com.github.jing332.tts_server_android.model.rhino.direct_link_upload.DirectUploadEngine
+import com.github.jing332.tts_server_android.model.rhino.direct_link_upload.DirectUploadFunction
 import com.github.jing332.tts_server_android.ui.view.AppDialogs.displayErrorDialog
 import com.github.jing332.common.utils.ClipboardUtils
 import com.github.jing332.common.utils.longToast
@@ -25,10 +25,9 @@ import kotlinx.coroutines.launch
 fun LinkUploadSelectionDialog(onDismissRequest: () -> Unit, json: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val engine = remember { DirectUploadEngine(context = context) }
     val targetList = remember {
         try {
-            engine.obtainFunctionList()
+            DirectUploadEngine(context = context).obtainFunctionList()
         } catch (e: Exception) {
             context.displayErrorDialog(e, context.getString(R.string.upload_to_url))
             null
@@ -49,7 +48,7 @@ fun LinkUploadSelectionDialog(onDismissRequest: () -> Unit, json: String) {
                     runCatching {
                         loading = true
                         val url =
-                            withIO { (value as DirectUploadFunction).invoke(json, engine.engine) }
+                            withIO { (value as DirectUploadFunction).invoke(json) }
                                 ?: throw Exception("url is null")
                         ClipboardUtils.copyText("TTS Server", url)
                         context.longToast(R.string.copied_url)
