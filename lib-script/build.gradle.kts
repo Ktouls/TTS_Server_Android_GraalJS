@@ -42,9 +42,11 @@ android {
 dependencies {
     coreLibraryDesugaring(libs.desugar)
 
-    //noinspection GradleDependency
-    api(libs.graalvm.polyglot)
-    api(libs.graalvm.js)
+    // GraalVM 20.3.13 - 本地 jar 文件
+    api(files("libs/js-20.3.13.jar"))
+    api(files("libs/truffle-api-20.3.13.jar"))
+    api(files("libs/graal-sdk-20.3.13.jar"))
+    api(files("libs/regex-20.3.13.jar"))
     implementation(project(":lib-common"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.okhttp)
