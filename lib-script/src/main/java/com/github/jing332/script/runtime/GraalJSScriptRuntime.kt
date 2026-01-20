@@ -34,11 +34,7 @@ open class GraalJSScriptRuntime(
                 .engine(sharedEngine)
                 .allowAllAccess(false)
                 .allowHostAccess(HostAccess.ALL)
-                .allowHostClassLookup { className ->
-                    !className.startsWith("java.lang.reflect.") &&
-                    !className.startsWith("dalvik.system.") &&
-                    !className.contains("android.app.ActivityThread")
-                }
+                .allowHostClassLookup { true }
                 .allowHostClassLoading(true)
                 .build()
         }
@@ -51,16 +47,8 @@ open class GraalJSScriptRuntime(
             val ctx = Context.newBuilder("js")
                 .engine(sharedEngine)
                 .allowAllAccess(false)
-                .allowHostAccess(HostAccess.newBuilder(HostAccess.ALL)
-                    .allowArrayAccess(true)
-                    .allowListAccess(true)
-                    .allowMapAccess(true)
-                    .build())
-                .allowHostClassLookup { className ->
-                    !className.startsWith("java.lang.reflect.") &&
-                    !className.startsWith("dalvik.system.") &&
-                    !className.contains("android.app.ActivityThread")
-                }
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup { true }
                 .allowHostClassLoading(true)
                 .build()
 
