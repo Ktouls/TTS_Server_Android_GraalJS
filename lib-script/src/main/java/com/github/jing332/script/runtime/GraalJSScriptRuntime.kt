@@ -10,6 +10,13 @@ open class GraalJSScriptRuntime(
     var console: Console = Console(),
 ) {
     companion object {
+        init {
+            // Android 兼容性配置 - 在初始化 Engine 之前设置
+            System.setProperty("polyglot.engine.WarnInterpreterOnly", "false")
+            System.setProperty("truffle.js.InterpretedHelper", "true")
+            System.setProperty("truffle.TruffleRuntime", "com.oracle.truffle.api.impl.DefaultTruffleRuntime")
+        }
+
         // 共享 Engine，避免多次创建导致的性能开销和模块系统问题
         @JvmStatic
         private val sharedEngine = try {
@@ -18,11 +25,6 @@ open class GraalJSScriptRuntime(
         } catch (e: Exception) {
             // 如果 Engine 创建失败，抛出异常让上层处理
             throw RuntimeException("Failed to initialize GraalVM Engine: ${e.message}", e)
-        }
-
-        init {
-            // Android 兼容性配置
-            System.setProperty("polyglot.engine.WarnInterpreterOnly", "false")
         }
 
         // 禁用 sharedContext，因为 GraalVM 23.1.2 在 Android 上有兼容性问题
@@ -50,6 +52,9 @@ open class GraalJSScriptRuntime(
                 .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup { true }
                 .allowHostClassLoading(true)
+                .option("engine.WarnInterpreterOnly", "false")
+                .option("js.Interop", "true")
+                .option("js.ECMAVersion", "2015")
                 .build()
 
             context = ctx
