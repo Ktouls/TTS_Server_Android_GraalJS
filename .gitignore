@@ -1,0 +1,9 @@
+.DS_Store
+*.tmp
+*.log
+node_modules/
+bin/
+gen/
+out/
+build/
+.gradle/
